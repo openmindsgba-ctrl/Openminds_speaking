@@ -1,0 +1,8 @@
+{
+  "name": "Trung tâm ngoại ngữ Pallas",
+  "description": "Ứng dụng luyện nói Tiếng Anh - Trung tâm ngoại ngữ Pallas. Xây nền từ móng, chinh phục đỉnh cao.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
