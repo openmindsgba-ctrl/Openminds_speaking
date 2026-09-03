@@ -864,7 +864,7 @@ The 30 questions MUST be divided into 4 types:
 1. "fill_blank" (approx 8 questions): Điền từ thích hợp vào chỗ trống. Provide the sentence with a blank (e.g., "___"). Provide the suggested words to choose from in "suggestedWords" (e.g., "apple, banana, orange").
 2. "rearrange" (approx 7 questions): Sắp xếp lại các từ thành câu hoàn chỉnh. Provide the scrambled words in "questionText" (e.g., "dog / the / barking / is").
 3. "find_mistake" (approx 8 questions): Tìm lỗi sai và sửa chúng. Provide a sentence with one grammatical or vocabulary mistake in "questionText". 
-4. "complete_sentence" (approx 7 questions): Hoàn thành câu sử dụng những từ đã cho. Provide a prompt or start of a sentence and some suggested words in "suggestedWords" (e.g., "if / rain / stay / home").
+4. "complete_sentence" (approx 7 questions): Give students a set of English keywords/phrases in "questionText" (e.g., "she / go / school / every day"). The student must use ALL the given words and may add articles (a, an, the), prepositions (in, on, at, to...), to-be verbs (is, am, are, was, were), auxiliaries, or change verb forms to write a grammatically correct complete English sentence. Put the given English keywords in "questionText" and leave "suggestedWords" empty. The "expectedAnswer" must be the correct full English sentence (e.g., "She goes to school every day.").
 
 IMPORTANT RULES:
 1. Ensure all questions and expected answers are grammatically correct and appropriate for the level.
