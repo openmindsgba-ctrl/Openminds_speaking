@@ -21,6 +21,7 @@ interface ReadingTwoProps {
   handlePlayAudio: () => Promise<void>;
   homeworkData?: any;
   onToggleTranslation: () => void;
+  onScoreChange?: (score: number) => void;
 }
 
 export const ReadingTwo: React.FC<ReadingTwoProps> = ({
@@ -39,6 +40,7 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
   handlePlayAudio,
   homeworkData,
   onToggleTranslation,
+  onScoreChange,
 }) => {
   const [userInputs, setUserInputs] = useState<Record<number, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -124,10 +126,6 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
     setUserInputs(prev => ({ ...prev, [index]: value }));
   };
 
-  const checkAnswers = () => {
-    setIsSubmitted(true);
-  };
-
   // Helper to normalize strings for comparison
   const normalize = (str: string) => {
     return str
@@ -144,6 +142,14 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
     return acc + (userAns === normalize(ans) ? 1 : 0);
   }, 0) || 0;
   const scoreStr = totalQuestions > 0 ? ((correctCount / totalQuestions) * 10).toFixed(1).replace('.0', '') : "0";
+  const scoreNumber = parseFloat(scoreStr);
+
+  const checkAnswers = () => {
+    setIsSubmitted(true);
+    if (onScoreChange) {
+      onScoreChange(scoreNumber);
+    }
+  };
 
   // Parse text like "Some text (1) more text (2)." into parts
   // We look for "(1)", "(2)", etc.

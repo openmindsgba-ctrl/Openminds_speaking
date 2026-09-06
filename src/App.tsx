@@ -57,6 +57,8 @@ export default function App() {
   const [exerciseData, setExerciseData] = useState<ExerciseData | null>(null);
   const [homeworkData, setHomeworkData] = useState<any>(null); // from types/index.ts
   const [exerciseScore, setExerciseScore] = useState<number | null>(null);
+  const [reading2Score, setReading2Score] = useState<number | null>(null);
+  const [comprehensionScore, setComprehensionScore] = useState<number | null>(null);
 
   // UI state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -140,6 +142,8 @@ export default function App() {
       
       setExerciseData(exData);
       setExerciseScore(null);
+      setReading2Score(null);
+      setComprehensionScore(null);
 
       // 3. Then generate audio (or fallback to TTS)
       audioPlayer.setIsAudioLoading(true);
@@ -152,7 +156,15 @@ export default function App() {
         return null;
       }) : null;
       
-      const audioUrl2Result = result.readingText2 ? await generateAudio(result.readingText2, level).catch(err => {
+      // Build complete reading text with answers filled in for TTS
+      let reading2TextForAudio = result.readingText2 || '';
+      if (Array.isArray(result.reading2Answers) && result.reading2Answers.length > 0) {
+        result.reading2Answers.forEach((ans: string, idx: number) => {
+          reading2TextForAudio = reading2TextForAudio.replace(`(${idx + 1})`, ans);
+        });
+      }
+      
+      const audioUrl2Result = reading2TextForAudio ? await generateAudio(reading2TextForAudio, level).catch(err => {
         console.error("Background audio generation 2 failed", err);
         return null;
       }) : null;
@@ -244,6 +256,8 @@ export default function App() {
     setExerciseData(lesson.exerciseData || null);
     setHomeworkData((lesson as any).homeworkData || null);
     setExerciseScore(lesson.exerciseScore ?? null);
+    setReading2Score(null);
+    setComprehensionScore(null);
     setComprehensionQuestions(lesson.comprehensionQuestions || null);
     setLevel(lesson.level);
     setShowTranslation(false);
@@ -520,6 +534,7 @@ export default function App() {
                         onDownloadPoster={downloadPoster}
                         onToggleTranslation={() => setShowTranslation(!showTranslation)}
                         posterRef={posterRef}
+                        onComprehensionScore={(score) => setComprehensionScore(score)}
                       />
 
 
@@ -544,6 +559,7 @@ export default function App() {
                             setIsPlaying={audioPlayer2.setIsPlaying}
                             handlePlayAudio={audioPlayer2.handlePlayAudio}
                             onToggleTranslation={() => setShowTranslation(!showTranslation)}
+                            onScoreChange={(score: number) => setReading2Score(score)}
                           />
                         </div>
                       )}
@@ -590,6 +606,102 @@ export default function App() {
                             savedScore={exerciseScore} 
                             onComplete={handleExerciseComplete} 
                           />
+                        </div>
+                      )}
+
+                      {/* Overall Score Summary */}
+                      {(recorder.evaluation?.score || reading2Score || comprehensionScore || exerciseScore) && (
+                        <div className="w-full max-w-5xl mx-auto mt-8">
+                          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2rem] shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+                            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full" />
+                            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/5 rounded-full" />
+                            
+                            <h3 className="text-2xl sm:text-3xl font-black text-center uppercase tracking-widest mb-8 relative z-10">
+                              📊 Bảng Điểm Tổng Hợp
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 relative z-10">
+                              {/* Speaking Score */}
+                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">1. Đọc bài & Speaking</div>
+                                <div className="text-3xl font-black">
+                                  {recorder.evaluation?.score != null ? `${recorder.evaluation.score}` : '—'}
+                                  <span className="text-lg text-blue-200">/10</span>
+                                </div>
+                              </div>
+                              
+                              {/* Fill in blanks Score */}
+                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">2. Điền từ vào chỗ trống</div>
+                                <div className="text-3xl font-black">
+                                  {reading2Score != null ? `${reading2Score}` : '—'}
+                                  <span className="text-lg text-blue-200">/10</span>
+                                </div>
+                              </div>
+                              
+                              {/* Comprehension Score */}
+                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">3. Reading Comprehension</div>
+                                <div className="text-3xl font-black">
+                                  {comprehensionScore != null ? `${comprehensionScore}` : '—'}
+                                  <span className="text-lg text-blue-200">/10</span>
+                                </div>
+                              </div>
+                              
+                              {/* Exercise Score */}
+                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">4. Bài tập viết</div>
+                                <div className="text-3xl font-black">
+                                  {exerciseScore != null ? `${exerciseScore}` : '—'}
+                                  <span className="text-lg text-blue-200">/10</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Average Score */}
+                            {(() => {
+                              const scores = [
+                                recorder.evaluation?.score,
+                                reading2Score,
+                                comprehensionScore,
+                                exerciseScore
+                              ].filter((s): s is number => s != null && s > 0);
+                              
+                              if (scores.length === 0) return null;
+                              
+                              const avg = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+                              
+                              const getComment = (score: number) => {
+                                if (score >= 9) return "Xuất sắc! Em đã hoàn thành bài học rất tuyệt vời, cô Yến rất tự hào! 🌟";
+                                if (score >= 7) return "Khá tốt! Em đã nắm được kiến thức cơ bản, hãy cố gắng thêm nhé! 👍";
+                                if (score >= 5) return "Trung bình. Em cần ôn lại bài và luyện tập thêm, cô tin em sẽ tiến bộ! 💪";
+                                return "Em cần cố gắng nhiều hơn. Hãy xem lại bài học và làm lại nhé! ❤️";
+                              };
+                              
+                              return (
+                                <div className="relative z-10">
+                                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/30">
+                                    <div className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-2">Điểm Trung Bình</div>
+                                    <div className="text-5xl font-black mb-1">
+                                      {avg}<span className="text-2xl text-blue-200">/10</span>
+                                    </div>
+                                    <div className="text-sm text-blue-100 mt-3 font-medium">
+                                      ({scores.length}/4 phần đã hoàn thành)
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Comment from Ms. Yen */}
+                                  <div className="mt-4 flex items-start gap-3 bg-white/10 rounded-xl p-4 border border-white/20">
+                                    <div className="w-10 h-10 rounded-full bg-pink-200 border-2 border-pink-300 flex items-center justify-center shrink-0 text-xl">👩‍🏫</div>
+                                    <div>
+                                      <div className="text-xs font-black text-pink-200 mb-1">Nhận xét từ Cô Yến:</div>
+                                      <p className="text-sm text-white/90 font-medium leading-relaxed">{getComment(avg)}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
                       )}
 

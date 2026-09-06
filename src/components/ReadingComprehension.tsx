@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Loader2, MessageSquare, AlertCircle, CheckCircle2, Award } from 'lucide-react';
+import { Mic, MicOff, Loader2, MessageSquare, AlertCircle, CheckCircle2, Award, Volume2 } from 'lucide-react';
 import { evaluateComprehensionAnswer } from '../services/geminiService';
 
 export interface ComprehensionQuestion {
@@ -12,6 +12,7 @@ export interface ComprehensionQuestion {
 interface ReadingComprehensionProps {
   questions: ComprehensionQuestion[];
   apiKey: string;
+  onScoreChange?: (score: number) => void;
 }
 
 interface EvaluationResult {
@@ -20,11 +21,12 @@ interface EvaluationResult {
   studentAnswer: string;
 }
 
-export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ questions, apiKey }) => {
+export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ questions, apiKey, onScoreChange }) => {
   const [evaluations, setEvaluations] = useState<Record<number, EvaluationResult>>({});
   const [loadingMap, setLoadingMap] = useState<Record<number, boolean>>({});
   const [activeMic, setActiveMic] = useState<number | null>(null);
   const [transcript, setTranscript] = useState<string>("");
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ ques
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      window.speechSynthesis.cancel();
     };
   }, []);
 
@@ -111,9 +114,30 @@ export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ ques
     }
   };
 
+  const speakQuestion = (qIdx: number, text: string) => {
+    window.speechSynthesis.cancel();
+    if (speakingIdx === qIdx) {
+      setSpeakingIdx(null);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    utterance.onend = () => setSpeakingIdx(null);
+    utterance.onerror = () => setSpeakingIdx(null);
+    setSpeakingIdx(qIdx);
+    window.speechSynthesis.speak(utterance);
+  };
+
   const isAllAnswered = Object.keys(evaluations).length === questions.length && questions.length > 0;
   const correctCount = Object.values(evaluations).filter(e => e.isCorrect).length;
   const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 10) : 0;
+
+  useEffect(() => {
+    if (isAllAnswered && onScoreChange) {
+      onScoreChange(score);
+    }
+  }, [isAllAnswered, score, onScoreChange]);
 
   return (
     <div className="bg-white rounded-[2rem] shadow-xl border-[6px] border-brand-blue-dark overflow-hidden">
@@ -148,6 +172,19 @@ export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ ques
                       </div>
                     )}
                   </div>
+                  
+                  {/* Speaker Button */}
+                  <button
+                    onClick={() => speakQuestion(qIdx, q.question)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 shadow-sm border-2 ${
+                      speakingIdx === qIdx
+                        ? 'bg-blue-50 border-blue-300 text-blue-500 animate-pulse'
+                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-blue-500 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                    title="Listen to question"
+                  >
+                    <Volume2 size={18} />
+                  </button>
                   
                   {/* Voice Answer Button */}
                   <button

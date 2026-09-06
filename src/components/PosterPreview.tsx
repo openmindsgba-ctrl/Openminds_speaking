@@ -25,6 +25,7 @@ interface PosterPreviewProps {
   posterRef: React.RefObject<HTMLDivElement | null>;
   grammarSummary?: string | null;
   comprehensionQuestions?: ComprehensionQuestion[] | null;
+  onComprehensionScore?: (score: number) => void;
 }
 
 // ====== CEFR SPEAKING EVALUATION SECTION ======
@@ -960,6 +961,7 @@ export const PosterPreview: React.FC<PosterPreviewProps> = ({
   posterRef,
   grammarSummary,
   comprehensionQuestions,
+  onComprehensionScore,
 }) => {
   const [isVocabPlaying, setIsVocabPlaying] = useState(false);
 
@@ -1132,7 +1134,7 @@ export const PosterPreview: React.FC<PosterPreviewProps> = ({
             {readingText && <ReadingPractice originalText={readingText} />}
             {comprehensionQuestions && comprehensionQuestions.length > 0 && (
               <div data-html2canvas-ignore className="mt-8">
-                <ReadingComprehension questions={comprehensionQuestions} apiKey={apiKey || ""} />
+                <ReadingComprehension questions={comprehensionQuestions} apiKey={apiKey || ""} onScoreChange={onComprehensionScore} />
               </div>
             )}
           </div>
