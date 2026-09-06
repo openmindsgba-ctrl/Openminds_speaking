@@ -20,6 +20,7 @@ import { CertificateModal } from './components/CertificateModal';
 import { Footer } from './components/Footer';
 import { LessonHistory } from './components/LessonHistory';
 import { ExerciseSection } from './components/ExerciseSection';
+import { HomeworkSection } from './components/HomeworkSection';
 import { ContentProtection } from './components/ContentProtection';
 
 // Hooks
@@ -606,6 +607,13 @@ export default function App() {
                             savedScore={exerciseScore} 
                             onComplete={handleExerciseComplete} 
                           />
+                        </div>
+                      )}
+
+                      {/* Homework / Essay Section */}
+                      {homeworkData && (
+                        <div className="w-full max-w-5xl mx-auto mt-8">
+                          <HomeworkSection data={homeworkData} />
                         </div>
                       )}
 
