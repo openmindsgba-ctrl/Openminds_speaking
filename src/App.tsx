@@ -123,7 +123,7 @@ export default function App() {
       setReadingText2(result.readingText2 || null);
       setTranslationText(result.translation);
       setTranslationText2(result.translation2 || null);
-      setVocabulary(result.vocabulary);
+      setVocabulary(result.vocabulary || []);
       setOverallGrammar(result.overallGrammar || null);
       setReading2Answers(result.reading2Answers || undefined);
       setGeneratedTopicName(result.topicName);

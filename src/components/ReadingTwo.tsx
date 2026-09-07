@@ -153,7 +153,7 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
 
   // Parse text like "Some text (1) more text (2)." into parts
   // We look for "(1)", "(2)", etc.
-  const parts = readingText.split(/(\(\d+\))/g);
+  const parts = String(readingText || '').split(/(\(\d+\))/g);
 
   return (
     <div className="bg-white rounded-[2rem] shadow-xl p-6 sm:p-8 flex flex-col gap-6 relative overflow-hidden border-[6px] border-brand-blue-dark">
@@ -167,7 +167,7 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
       <div className="bg-blue-50 border-2 border-blue-100 rounded-xl p-4">
         <h4 className="text-sm font-bold text-blue-900 mb-2 uppercase tracking-wide">Word Bank</h4>
         <div className="flex flex-wrap gap-2">
-          {vocabulary.map((v, idx) => (
+          {(vocabulary || []).map((v, idx) => (
             <span key={idx} className="bg-white border border-blue-200 text-blue-700 px-3 py-1 rounded-lg text-sm font-bold shadow-sm">
               {v.word}
             </span>
@@ -359,7 +359,7 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {answers?.map((ans, idx) => {
                   const ansStr = String(ans || '');
-                  const vocabMatch = vocabulary.find(v => String(v.word || '').toLowerCase() === ansStr.toLowerCase());
+                  const vocabMatch = (vocabulary || []).find(v => String(v.word || '').toLowerCase() === ansStr.toLowerCase());
                   return (
                     <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
                       <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black shrink-0">

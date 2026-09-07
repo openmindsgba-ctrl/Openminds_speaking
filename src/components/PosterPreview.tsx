@@ -499,10 +499,10 @@ const ReadingPractice: React.FC<{ originalText: string | null }> = ({ originalTe
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5];
 
-const renderMarkdown = (text: string) => {
+const renderMarkdown = (text: any) => {
   if (!text) return null;
   // Strip ALL asterisks from the text
-  let cleaned = text.replace(/\*/g, '');
+  let cleaned = String(text).replace(/\*/g, '');
   // Support both [word] bracket notation and **word** markdown for backward compatibility
   // Split on [word] brackets OR **word** patterns
   const parts = cleaned.split(/(\[.*?\])/g);
@@ -550,8 +550,8 @@ interface MindMapNode {
   children: MindMapNode[];
 }
 
-const parseMarkdownToTree = (md: string): MindMapNode[] => {
-  const lines = md.split('\n').filter(line => line.trim().length > 0);
+const parseMarkdownToTree = (md: any): MindMapNode[] => {
+  const lines = String(md || '').split('\n').filter(line => line.trim().length > 0);
   const rootNodes: MindMapNode[] = [];
   const stack: { node: MindMapNode, indent: number }[] = [];
 
@@ -577,7 +577,7 @@ const parseMarkdownToTree = (md: string): MindMapNode[] => {
   });
 
   if (rootNodes.length === 0) {
-    return [{ label: "Grammar", children: [{ label: md, children: [] }] }];
+    return [{ label: "Grammar", children: [{ label: String(md || ''), children: [] }] }];
   }
   return rootNodes;
 };
@@ -621,8 +621,8 @@ interface GrammarBlock {
   tip: string | null;
 }
 
-const parseGrammarBlocks = (md: string): GrammarBlock[] => {
-  const lines = md.split('\n').filter(l => l.trim().length > 0);
+const parseGrammarBlocks = (md: any): GrammarBlock[] => {
+  const lines = String(md || '').split('\n').filter(l => l.trim().length > 0);
   const blocks: GrammarBlock[] = [];
   let current: Partial<GrammarBlock> | null = null;
   let collectingExamples = false;
