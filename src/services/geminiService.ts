@@ -3,8 +3,28 @@ import type { ExerciseData } from '../types';
 
 const parseSafeJson = (text: string) => {
   let cleaned = (text || "{}").trim();
-  // Strip markdown backticks if present
-  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+  
+  // Extract JSON from markdown blocks if present anywhere in the text
+  const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (jsonMatch && jsonMatch[1]) {
+    cleaned = jsonMatch[1].trim();
+  } else {
+    // Attempt to find the first {
+    const firstBrace = cleaned.indexOf('{');
+    if (firstBrace !== -1) {
+      cleaned = cleaned.substring(firstBrace);
+      // Only trim the end if we find a clear closing brace followed by non-JSON text
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (lastBrace !== -1 && lastBrace < cleaned.length - 1) {
+        // Just leave it as is if it might be truncated. Trimming from the right is risky.
+        // But if there's obvious conversational text at the end, we can try to strip it.
+        const afterBrace = cleaned.substring(lastBrace + 1).trim();
+        if (afterBrace.length > 0 && !afterBrace.includes('"') && !afterBrace.includes(']')) {
+           cleaned = cleaned.substring(0, lastBrace + 1);
+        }
+      }
+    }
+  }
   
   try {
     return JSON.parse(cleaned);
@@ -326,15 +346,7 @@ export const generateContent = async (
      - "meaning": brief Vietnamese meaning
      - "emoji": a relevant emoji
   9. "overallGrammar": Summarize the core grammar topic as a hierarchical Markdown list (using bullet points and indentation) to be displayed as a mindmap. Include: a brief and easy-to-understand explanation, formulas (if any), specific examples, and quick memory tips. ${grammarLanguageInstruction}
-  10. "comprehensionQuestions": Sinh ra chính xác 10 câu hỏi đọc hiểu trắc nghiệm (multiple choice) dựa trên bài đọc 1. Mỗi câu có 4 lựa chọn A, B, C, D. Output dạng mảng các object: [{"question": "câu hỏi bằng tiếng Anh", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correctAnswer": "A", "suggestedAnswer": "giải thích ngắn gọn bằng tiếng Việt tại sao đáp án đúng"}]. Đảm bảo mỗi câu có ĐÚNG 4 options và correctAnswer là một trong A, B, C, D.
-  11. "homework": Generate homework exercises related to the topic and grammar. Output exactly this JSON structure:
-      "matching": { "items": [{"term": "english word", "definition": "vietnamese definition"}] } (5 items)
-      "fillBlanks": [{"sentence": "sentence with ___", "options": ["opt1", "opt2", "opt3"], "answer": "correct option"}] (5 items)
-      "rewrites": [{"originalSentence": "sentence", "hint": "hint (e.g. Begin with...)", "answer": "rewritten sentence"}] (5 items)
-      "mistakes": [{"sentence": "sentence with one mistake", "mistake": "the wrong word", "correction": "the correct word"}] (5 items)
-      "questions": [{"question": "reading comprehension question", "suggestedAnswer": "answer"}] (3 items)
-      "essay": {"topic": "essay topic", "guidance": "guidance/hints in vietnamese"}
-  
+  10. "comprehensionQuestions": Sinh ra chính xác 5 câu hỏi đọc hiểu trắc nghiệm (multiple choice) dựa trên bài đọc 1. Mỗi câu có 4 lựa chọn A, B, C, D. Output dạng mảng các object: [{"question": "câu hỏi bằng tiếng Anh", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correctAnswer": "A", "suggestedAnswer": "giải thích ngắn gọn bằng tiếng Việt tại sao đáp án đúng"}]. Đảm bảo mỗi câu có ĐÚNG 4 options và correctAnswer là một trong A, B, C, D.
   Output the result strictly in JSON format:
   {
     "prompt": "string",
@@ -350,15 +362,7 @@ export const generateContent = async (
     ],
     "vocabulary": [
       { "word": "string", "ipa": "string", "meaning": "string", "emoji": "string" }
-    ],
-    "homework": {
-      "matching": { "items": [] },
-      "fillBlanks": [],
-      "rewrites": [],
-      "mistakes": [],
-      "questions": [],
-      "essay": { "topic": "", "guidance": "" }
-    }
+    ]
   }
   Note: Ensure exactly ${vocabCount} vocabulary items and adherence to the ${readingLength} reading length requirement. NEVER use the * character anywhere.`;
 
@@ -416,8 +420,12 @@ export const generateContent = async (
       comprehensionQuestions: result.comprehensionQuestions || null,
       homework: result.homework || null,
     };
-  } catch (e) {
+  } catch (e: any) {
     console.error("Failed to parse JSON response:", response.text, e);
+    // If it's our own validation error, propagate it
+    if (e.message && e.message.includes("AI không thể tạo được")) {
+      throw e;
+    }
     throw new Error("Failed to parse lesson content. Please try again.");
   }
 };
@@ -866,19 +874,21 @@ export const generateExercise = async (
   readingText: string,
   level: EnglishLevel
 ): Promise<ExerciseData> => {
-  const systemInstruction = `You are a highly skilled English pedagogical expert and school teacher. Create EXACTLY 30 written exercises based ON THE PROVIDED READING TEXT and general English knowledge appropriate for level ${level}.
+  const systemInstruction = `You are a highly skilled English pedagogical expert and school teacher. Create EXACTLY 20 written exercises based ON THE PROVIDED READING TEXT and general English knowledge appropriate for level ${level}.
 
-The 30 questions MUST be divided into 4 types:
-1. "fill_blank" (approx 8 questions): Điền từ thích hợp vào chỗ trống. Provide the sentence with a blank (e.g., "___"). Provide the suggested words to choose from in "suggestedWords" (e.g., "apple, banana, orange").
-2. "rearrange" (approx 7 questions): Sắp xếp lại các từ thành câu hoàn chỉnh. Provide the scrambled words in "questionText" (e.g., "dog / the / barking / is").
-3. "find_mistake" (approx 8 questions): Tìm lỗi sai và sửa chúng. Provide a sentence with one grammatical or vocabulary mistake in "questionText". 
-4. "complete_sentence" (approx 7 questions): Give students a set of English keywords/phrases in "questionText" (e.g., "she / go / school / every day"). The student must use ALL the given words and may add articles (a, an, the), prepositions (in, on, at, to...), to-be verbs (is, am, are, was, were), auxiliaries, or change verb forms to write a grammatically correct complete English sentence. Put the given English keywords in "questionText" and leave "suggestedWords" empty. The "expectedAnswer" must be the correct full English sentence (e.g., "She goes to school every day.").
+The 20 questions MUST be divided into 4 types:
+1. "fill_blank" (exactly 5 questions): Điền từ thích hợp vào chỗ trống. Provide the sentence with a blank (e.g., "___"). Provide the suggested words to choose from in "suggestedWords" (e.g., "apple, banana, orange").
+2. "rearrange" (exactly 5 questions): Sắp xếp lại các từ thành câu hoàn chỉnh. Provide the scrambled words in "questionText" (e.g., "dog / the / barking / is").
+3. "find_mistake" (exactly 5 questions): Tìm lỗi sai và sửa chúng. Provide a sentence with one grammatical or vocabulary mistake in "questionText". 
+4. "complete_sentence" (exactly 5 questions): Give students a set of English keywords/phrases in "questionText" (e.g., "she / go / school / every day"). The student must use ALL the given words and may add articles (a, an, the), prepositions (in, on, at, to...), to-be verbs (is, am, are, was, were), auxiliaries, or change verb forms to write a grammatically correct complete English sentence. Put the given English keywords in "questionText" and leave "suggestedWords" empty. The "expectedAnswer" must be the correct full English sentence (e.g., "She goes to school every day.").
+
+Additionally, you MUST generate an "essay" task (Writing exercise). 
 
 IMPORTANT RULES:
 1. Ensure all questions and expected answers are grammatically correct and appropriate for the level.
 2. Provide the "expectedAnswer" which is the correct final string the user should type.
 3. Provide a brief, encouraging pedagogical "explanation" STRICTLY IN VIETNAMESE (e.g., "Câu này dùng thì hiện tại đơn vì diễn tả thói quen.").
-4. All IDs must be unique strings (e.g., "wq1", "wq2", ..., "wq30").
+4. All IDs must be unique strings (e.g., "wq1", "wq2", ..., "wq20").
 5. The output must strictly match the JSON schema.
 6. Do NOT use markdown bold (**) or asterisks in your output, just plain text or bracket notation if necessary.
 
@@ -893,8 +903,12 @@ Output strictly a JSON object matching this schema:
       "expectedAnswer": "read", 
       "explanation": "Chủ ngữ I đi với động từ nguyên thể." 
     },
-    ... 30 items
-  ]
+    ... 20 items
+  ],
+  "essay": {
+    "topic": "Describe your favorite...",
+    "guidance": "Provide helpful guidance/hints in English. Instruct the student to use today's grammar topic in their writing."
+  }
 }`;
 
   const response = await generateWithFallback(getTextModels(), {
@@ -978,6 +992,40 @@ Output JSON:
   } catch (err: any) {
     console.error("Speaking Answer Evaluation Error:", err);
     throw new Error("Failed to evaluate answer. Please try again.");
+  }
+};
+
+export const evaluateEssay = async (
+  essayText: string,
+  topic: string,
+  level: EnglishLevel
+): Promise<{ score: number; feedback: string; }> => {
+  const systemInstruction = `You are an expert English teacher. Grade the following essay written by a student at English level ${level}.
+Topic: ${topic}
+Student Essay:
+${essayText}
+
+Provide an overall score out of 10, and brief feedback (in Vietnamese) highlighting grammar/vocabulary strengths and corrections.
+Format strictly as JSON:
+{
+  "score": 8.5,
+  "feedback": "..."
+}`;
+
+  const response = await generateWithFallback(getTextModels(), {
+    contents: [{ role: "user", parts: [{ text: "Please evaluate my essay." }] }],
+    config: { systemInstruction, responseMimeType: "application/json", maxOutputTokens: 1024 },
+  });
+
+  try {
+    const result = parseSafeJson(response.text || "{}");
+    return {
+      score: Math.min(10, Math.max(0, Number(result.score) || 0)),
+      feedback: result.feedback || "Cố gắng lên nhé!"
+    };
+  } catch (err) {
+    console.error("Essay evaluation error", err);
+    throw new Error("Cannot grade the essay at this time.");
   }
 };
 

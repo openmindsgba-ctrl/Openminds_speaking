@@ -54,8 +54,8 @@ export const Footer: React.FC = () => (
 
         {/* Slogan */}
         <div className="space-y-6">
-          <h4 className="text-brand-gold font-black uppercase tracking-[0.2em] relative inline-block">
-            VỀ OPEN MINDS ENGLISH CENTRE
+          <h4 className="text-brand-gold font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] relative inline-block whitespace-nowrap text-sm sm:text-base">
+            ABOUT OPEN MINDS ENGLISH CENTRE
             <div className="absolute -bottom-2 left-0 w-full h-1 bg-white/10" />
           </h4>
           <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] space-y-4">

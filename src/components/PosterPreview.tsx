@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Volume2, Pause, RefreshCw, Target, Play, BookOpen, Lightbulb, Zap, Mic, MicOff, CheckCircle, Languages } from 'lucide-react';
+import { generateAudio } from '../services/geminiService';
 import { VocabularyItem, EnglishLevel } from '../types';
 import { ReadingComprehension, ComprehensionQuestion } from './ReadingComprehension';
 
@@ -522,15 +523,26 @@ const getEnglishVoice = () => {
          null;
 };
 
-const playWordAudio = (e: React.MouseEvent, word: string) => {
+const BROWSER_TTS_SIGNAL = "BROWSER_TTS_FALLBACK";
+
+const playWordAudio = async (e: React.MouseEvent, word: string, level: EnglishLevel) => {
   e.stopPropagation();
-  const utterance = new SpeechSynthesisUtterance(word);
-  utterance.lang = 'en-US';
-  const voice = getEnglishVoice();
-  if (voice) {
-    utterance.voice = voice;
+  try {
+    const url = await generateAudio(word, level);
+    if (url === BROWSER_TTS_SIGNAL) {
+      throw new Error("Fallback to browser TTS");
+    }
+    const audio = new Audio(url);
+    await audio.play();
+  } catch (err) {
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    const voice = getEnglishVoice();
+    if (voice) {
+      utterance.voice = voice;
+    }
+    window.speechSynthesis.speak(utterance);
   }
-  window.speechSynthesis.speak(utterance);
 };
 
 interface MindMapNode {
@@ -965,29 +977,51 @@ export const PosterPreview: React.FC<PosterPreviewProps> = ({
 }) => {
   const [isVocabPlaying, setIsVocabPlaying] = useState(false);
 
-  const handlePlayVocab = useCallback((e: React.MouseEvent) => {
+  // Store the Audio object so we can stop it
+  const vocabAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlayVocab = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isVocabPlaying || window.speechSynthesis.speaking) {
+    if (isVocabPlaying) {
+      if (vocabAudioRef.current) {
+        vocabAudioRef.current.pause();
+        vocabAudioRef.current = null;
+      }
       window.speechSynthesis.cancel();
       setIsVocabPlaying(false);
     } else if (vocabulary && vocabulary.length > 0) {
       setIsVocabPlaying(true);
-      window.speechSynthesis.cancel(); // Clear any existing speech
-      vocabulary.forEach((item, index) => {
-        const utterance = new SpeechSynthesisUtterance(item.word);
-        utterance.lang = 'en-US';
-        const voice = getEnglishVoice();
-        if (voice) {
-          utterance.voice = voice;
+      
+      const allWords = vocabulary.map(v => v.word).join(". ");
+      try {
+        const url = await generateAudio(allWords, level);
+        if (url === BROWSER_TTS_SIGNAL) {
+          throw new Error("Fallback to browser TTS");
         }
-        if (index === vocabulary.length - 1) {
-          utterance.onend = () => setIsVocabPlaying(false);
-          utterance.onerror = () => setIsVocabPlaying(false);
-        }
-        window.speechSynthesis.speak(utterance);
-      });
+        const audio = new Audio(url);
+        vocabAudioRef.current = audio;
+        audio.onended = () => setIsVocabPlaying(false);
+        audio.onerror = () => setIsVocabPlaying(false);
+        await audio.play();
+      } catch (err) {
+        // Fallback to browser TTS
+        window.speechSynthesis.cancel();
+        vocabulary.forEach((item, index) => {
+          const utterance = new SpeechSynthesisUtterance(item.word);
+          utterance.lang = 'en-US';
+          const voice = getEnglishVoice();
+          if (voice) {
+            utterance.voice = voice;
+          }
+          if (index === vocabulary.length - 1) {
+            utterance.onend = () => setIsVocabPlaying(false);
+            utterance.onerror = () => setIsVocabPlaying(false);
+          }
+          window.speechSynthesis.speak(utterance);
+        });
+      }
     }
-  }, [vocabulary, isVocabPlaying]);
+  }, [vocabulary, isVocabPlaying, level]);
 
   return (
     <div
@@ -1046,7 +1080,7 @@ export const PosterPreview: React.FC<PosterPreviewProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="font-black text-xl leading-tight" style={{ color: '#0c4a6e' }}>{item.word}</span>
                         <button 
-                          onClick={(e) => playWordAudio(e, item.word)}
+                          onClick={(e) => playWordAudio(e, item.word, level)}
                           className="text-brand-blue hover:text-brand-gold transition-colors"
                           title="Listen to pronunciation"
                         >

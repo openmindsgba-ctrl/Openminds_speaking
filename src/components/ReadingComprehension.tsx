@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Loader2, MessageSquare, AlertCircle, CheckCircle2, Award, Volume2 } from 'lucide-react';
-import { evaluateComprehensionAnswer } from '../services/geminiService';
+import { evaluateComprehensionAnswer, generateAudio } from '../services/geminiService';
+import { EnglishLevel } from '../types';
 
 export interface ComprehensionQuestion {
   question: string;
@@ -13,6 +14,7 @@ interface ReadingComprehensionProps {
   questions: ComprehensionQuestion[];
   apiKey: string;
   onScoreChange?: (score: number) => void;
+  level?: EnglishLevel;
 }
 
 interface EvaluationResult {
@@ -21,18 +23,22 @@ interface EvaluationResult {
   studentAnswer: string;
 }
 
-export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ questions, apiKey, onScoreChange }) => {
+export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ questions, apiKey, onScoreChange, level = "Movers" }) => {
   const [evaluations, setEvaluations] = useState<Record<number, EvaluationResult>>({});
   const [loadingMap, setLoadingMap] = useState<Record<number, boolean>>({});
   const [activeMic, setActiveMic] = useState<number | null>(null);
   const [transcript, setTranscript] = useState<string>("");
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
       }
       window.speechSynthesis.cancel();
     };
@@ -73,9 +79,6 @@ export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ ques
     };
 
     recognition.onend = () => {
-      // We don't auto evaluate on end, we wait for manual stop to ensure full transcript is captured, 
-      // but if it ends unexpectedly, we could evaluate if transcript is full.
-      // For now, let's keep it manual stop for better UX control.
     };
 
     recognitionRef.current = recognition;
@@ -114,19 +117,39 @@ export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ ques
     }
   };
 
-  const speakQuestion = (qIdx: number, text: string) => {
+  const BROWSER_TTS_SIGNAL = "BROWSER_TTS_FALLBACK";
+
+  const speakQuestion = async (qIdx: number, text: string) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
     window.speechSynthesis.cancel();
+    
     if (speakingIdx === qIdx) {
       setSpeakingIdx(null);
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.onend = () => setSpeakingIdx(null);
-    utterance.onerror = () => setSpeakingIdx(null);
+    
     setSpeakingIdx(qIdx);
-    window.speechSynthesis.speak(utterance);
+    
+    try {
+      const url = await generateAudio(text, level);
+      if (url === BROWSER_TTS_SIGNAL) {
+        throw new Error("Fallback to browser TTS");
+      }
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => setSpeakingIdx(null);
+      audio.onerror = () => setSpeakingIdx(null);
+      await audio.play();
+    } catch (err) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      utterance.onend = () => setSpeakingIdx(null);
+      utterance.onerror = () => setSpeakingIdx(null);
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const isAllAnswered = Object.keys(evaluations).length === questions.length && questions.length > 0;

@@ -8,6 +8,10 @@ interface CertificateModalProps {
   show: boolean;
   onClose: () => void;
   evaluation: EvaluationResult | null;
+  comprehensionScore: number | null;
+  reading2Score: number | null;
+  exerciseScore: number | null;
+  writingScore: number | null;
   studentName: string;
   teacherName: string;
   generatedTopicName: string | null;
@@ -16,14 +20,25 @@ interface CertificateModalProps {
   isDownloading: boolean;
   setIsDownloading: (d: boolean) => void;
   setError: (err: string | null) => void;
-  exerciseScore: number | null;
 }
 
 export const CertificateModal: React.FC<CertificateModalProps> = ({
-  show, onClose, evaluation, studentName, teacherName,
-  generatedTopicName, topic, level, isDownloading, setIsDownloading, setError, exerciseScore
+  show, onClose, evaluation, comprehensionScore, reading2Score, exerciseScore, writingScore,
+  studentName, teacherName, generatedTopicName, topic, level, isDownloading, setIsDownloading, setError
 }) => {
   const certificateRef = useRef<HTMLDivElement>(null);
+
+  const scores = [
+    evaluation?.score,
+    reading2Score,
+    comprehensionScore,
+    exerciseScore,
+    writingScore
+  ].filter((s): s is number => s != null);
+
+  const overallAverage = scores.length > 0 
+    ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 
+    : 0;
 
   const downloadCertificate = async () => {
     if (!certificateRef.current || isDownloading) return;
@@ -57,7 +72,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
 
   return (
     <AnimatePresence>
-      {show && evaluation && (
+      {show && (
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -75,7 +90,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             <div className="p-4 sm:p-8 overflow-auto max-h-[80vh]">
               <div 
                 ref={certificateRef} data-certificate-container
-                className="relative w-full aspect-[1.414/1] bg-white p-6 sm:p-12 flex flex-col items-center justify-between text-center font-serif"
+                className="relative w-full bg-white p-6 sm:p-12 flex flex-col items-center justify-between text-center font-serif min-h-[700px]"
                 style={{ border: '16px double #1D4ED8', backgroundImage: 'radial-gradient(circle at 2px 2px, #FEF2F2 1px, transparent 0)', backgroundSize: '32px 32px', backgroundColor: '#ffffff' }}
               >
                 {/* Corners */}
@@ -84,51 +99,80 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                 <div className="absolute bottom-4 left-4 w-16 sm:w-20 h-16 sm:h-20 rounded-bl-lg" style={{ borderBottom: '8px solid #EF4444', borderLeft: '8px solid #EF4444' }} />
                 <div className="absolute bottom-4 right-4 w-16 sm:w-20 h-16 sm:h-20 rounded-br-lg" style={{ borderBottom: '8px solid #EF4444', borderRight: '8px solid #EF4444' }} />
 
-                <div className="space-y-4">
+                <div className="space-y-4 mb-4">
                   <div className="flex justify-center">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #1E3A8A, #1D4ED8)', border: '4px solid #ffffff', color: '#ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                      <Trophy size={48} style={{ color: '#ffffff' }} />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #1E3A8A, #1D4ED8)', border: '4px solid #ffffff', color: '#ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                      <Trophy size={40} style={{ color: '#ffffff' }} />
                     </div>
                   </div>
-                  <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-widest" style={{ color: '#1E3A8A', textShadow: '2px 2px 0 rgba(127,29,29,0.1)' }}>Certificate of Excellence</h1>
-                  <p className="text-base sm:text-xl italic font-medium" style={{ color: '#1D4ED8' }}>This award is proudly presented to</p>
+                  <h1 className="text-xl sm:text-3xl font-black uppercase tracking-widest" style={{ color: '#1E3A8A', textShadow: '2px 2px 0 rgba(127,29,29,0.1)' }}>Certificate of Excellence</h1>
+                  <p className="text-sm sm:text-lg italic font-medium" style={{ color: '#1D4ED8' }}>This award is proudly presented to</p>
                 </div>
 
-                <div className="space-y-4">
-                  <h2 className="text-3xl sm:text-6xl font-black pb-4 min-w-[200px] sm:min-w-[400px] font-serif italic" style={{ color: '#1E3A8A', borderBottom: '4px solid #FECACA' }}>
+                <div className="space-y-4 mb-6">
+                  <h2 className="text-2xl sm:text-5xl font-black pb-2 min-w-[200px] sm:min-w-[400px] font-serif italic" style={{ color: '#1E3A8A', borderBottom: '4px solid #FECACA' }}>
                     {studentName || "Little Star"}
                   </h2>
                   <div className="space-y-1">
-                    <p className="text-base sm:text-xl font-medium" style={{ color: '#4B5563' }}>For outstanding performance in English Speaking</p>
-                    <p className="text-sm sm:text-lg font-bold italic" style={{ color: '#6B7280' }}>Topic: {generatedTopicName || topic || "General English"}</p>
+                    <p className="text-sm sm:text-lg font-medium" style={{ color: '#4B5563' }}>For outstanding performance in English</p>
+                    <p className="text-xs sm:text-base font-bold italic" style={{ color: '#6B7280' }}>Topic: {generatedTopicName || topic || "General English"}</p>
                   </div>
-                  <div className="inline-block px-4 sm:px-6 py-2 rounded-full text-lg sm:text-2xl font-black uppercase tracking-widest" style={{ backgroundColor: '#FEF2F2', color: '#991B1B', border: '2px solid #FECACA' }}>
+                  <div className="inline-block px-4 sm:px-6 py-1 rounded-full text-base sm:text-xl font-black uppercase tracking-widest" style={{ backgroundColor: '#FEF2F2', color: '#991B1B', border: '2px solid #FECACA' }}>
                     Level: {level}
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 justify-center">
-                  <div className="px-6 sm:px-10 py-4 sm:py-6 rounded-[2rem]" style={{ background: 'linear-gradient(to bottom right, #FEF2F2, #FECACA)', border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                    <p className="text-[10px] sm:text-xs uppercase font-black tracking-[0.2em] mb-2" style={{ color: '#1D4ED8' }}>Speaking Score</p>
-                    <p className="text-3xl sm:text-5xl font-black" style={{ color: '#991B1B', textShadow: '2px 2px 0 white' }}>{evaluation.score}<span className="text-lg sm:text-xl" style={{ color: '#EF4444' }}>/10</span></p>
+                {/* Main Overall Score */}
+                <div className="w-full flex justify-center mb-8">
+                  <div className="px-8 sm:px-12 py-4 sm:py-6 rounded-[2rem]" style={{ background: 'linear-gradient(to bottom right, #1E3A8A, #1e40af)', border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+                    <p className="text-[10px] sm:text-sm uppercase font-black tracking-[0.2em] mb-2" style={{ color: '#bfdbfe' }}>Overall Average Score</p>
+                    <p className="text-4xl sm:text-6xl font-black text-white">{overallAverage}<span className="text-xl sm:text-2xl text-blue-300">/10</span></p>
                   </div>
-                  {exerciseScore !== null && (
-                    <div className="px-6 sm:px-10 py-4 sm:py-6 rounded-[2rem]" style={{ background: 'linear-gradient(to bottom right, #eff6ff, #dbeafe)', border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                      <p className="text-[10px] sm:text-xs uppercase font-black tracking-[0.2em] mb-2" style={{ color: '#2563eb' }}>Exercise Score</p>
-                      <p className="text-3xl sm:text-5xl font-black" style={{ color: '#1e40af', textShadow: '2px 2px 0 white' }}>{exerciseScore}<span className="text-lg sm:text-xl" style={{ color: '#60a5fa' }}>/10</span></p>
+                </div>
+
+                {/* Sub Scores Grid */}
+                <div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 justify-center items-stretch mb-8 px-4">
+                  {evaluation?.score != null && (
+                    <div className="p-3 bg-red-50 rounded-xl border-2 border-red-100 flex flex-col justify-center items-center">
+                      <p className="text-[9px] sm:text-[10px] uppercase font-bold text-red-600 tracking-wider mb-1 text-center">Speaking</p>
+                      <p className="text-xl sm:text-2xl font-black text-red-700">{evaluation.score}</p>
+                    </div>
+                  )}
+                  {reading2Score != null && (
+                    <div className="p-3 bg-blue-50 rounded-xl border-2 border-blue-100 flex flex-col justify-center items-center">
+                      <p className="text-[9px] sm:text-[10px] uppercase font-bold text-blue-600 tracking-wider mb-1 text-center">Fill Blanks</p>
+                      <p className="text-xl sm:text-2xl font-black text-blue-700">{reading2Score}</p>
+                    </div>
+                  )}
+                  {comprehensionScore != null && (
+                    <div className="p-3 bg-green-50 rounded-xl border-2 border-green-100 flex flex-col justify-center items-center">
+                      <p className="text-[9px] sm:text-[10px] uppercase font-bold text-green-600 tracking-wider mb-1 text-center">Comprehension</p>
+                      <p className="text-xl sm:text-2xl font-black text-green-700">{comprehensionScore}</p>
+                    </div>
+                  )}
+                  {exerciseScore != null && (
+                    <div className="p-3 bg-purple-50 rounded-xl border-2 border-purple-100 flex flex-col justify-center items-center">
+                      <p className="text-[9px] sm:text-[10px] uppercase font-bold text-purple-600 tracking-wider mb-1 text-center">Exercises</p>
+                      <p className="text-xl sm:text-2xl font-black text-purple-700">{exerciseScore}</p>
+                    </div>
+                  )}
+                  {writingScore != null && (
+                    <div className="p-3 bg-teal-50 rounded-xl border-2 border-teal-100 flex flex-col justify-center items-center">
+                      <p className="text-[9px] sm:text-[10px] uppercase font-bold text-teal-600 tracking-wider mb-1 text-center">Writing</p>
+                      <p className="text-xl sm:text-2xl font-black text-teal-700">{writingScore}</p>
                     </div>
                   )}
                 </div>
 
-                <div className="w-full flex justify-between items-end pt-8 sm:pt-12 px-4 sm:px-8">
+                <div className="w-full flex justify-between items-end pt-4 sm:pt-6 px-4 sm:px-8 mt-auto">
                   <div className="text-left space-y-2">
                     <p className="text-xs sm:text-sm font-black" style={{ color: '#1E3A8A' }}>{new Date().toLocaleDateString('en-US')}</p>
-                    <div className="w-32 sm:w-48" style={{ borderBottom: '2px solid #FECACA' }} />
+                    <div className="w-24 sm:w-40" style={{ borderBottom: '2px solid #FECACA' }} />
                     <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest" style={{ color: '#1D4ED8' }}>Date of Issue</p>
                   </div>
                   <div className="text-right space-y-2">
                     <p className="text-base sm:text-xl font-black font-serif italic" style={{ color: '#1E3A8A' }}>{teacherName}</p>
-                    <div className="w-32 sm:w-48" style={{ borderBottom: '2px solid #FECACA' }} />
+                    <div className="w-24 sm:w-40" style={{ borderBottom: '2px solid #FECACA' }} />
                     <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest" style={{ color: '#1D4ED8' }}>Head Teacher</p>
                   </div>
                 </div>
@@ -150,4 +194,3 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
     </AnimatePresence>
   );
 };
-

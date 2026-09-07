@@ -60,6 +60,7 @@ export default function App() {
   const [exerciseScore, setExerciseScore] = useState<number | null>(null);
   const [reading2Score, setReading2Score] = useState<number | null>(null);
   const [comprehensionScore, setComprehensionScore] = useState<number | null>(null);
+  const [writingScore, setWritingScore] = useState<number | null>(null);
 
   // UI state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -145,6 +146,7 @@ export default function App() {
       setExerciseScore(null);
       setReading2Score(null);
       setComprehensionScore(null);
+      setWritingScore(null);
 
       // 3. Then generate audio (or fallback to TTS)
       audioPlayer.setIsAudioLoading(true);
@@ -259,6 +261,7 @@ export default function App() {
     setExerciseScore(lesson.exerciseScore ?? null);
     setReading2Score(null);
     setComprehensionScore(null);
+    setWritingScore(null);
     setComprehensionQuestions(lesson.comprehensionQuestions || null);
     setLevel(lesson.level);
     setShowTranslation(false);
@@ -275,6 +278,10 @@ export default function App() {
       lessonHistory.updateExerciseScore(currentLessonId, score);
     }
   }, [currentLessonId, lessonHistory]);
+
+  const handleWritingComplete = useCallback((score: number) => {
+    setWritingScore(score);
+  }, []);
 
   const downloadPoster = useCallback(async () => {
     if (!posterRef.current || isDownloading) return;
@@ -514,7 +521,7 @@ export default function App() {
                         <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                         <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600" size={24} />
                       </div>
-                      <p className="text-gray-500 font-medium animate-pulse text-center px-4">Gemini is preparing the lesson for you...</p>
+                      <p className="text-gray-500 font-medium animate-pulse text-center px-4">Ms Yen is preparing the lesson for you...</p>
                     </motion.div>
                   ) : readingText ? (
                     <motion.div key="result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full flex flex-col items-center gap-4">
@@ -605,20 +612,17 @@ export default function App() {
                           <ExerciseSection 
                             exerciseData={exerciseData} 
                             savedScore={exerciseScore} 
-                            onComplete={handleExerciseComplete} 
+                            onComplete={handleExerciseComplete}
+                            onWritingComplete={handleWritingComplete}
+                            level={level}
                           />
                         </div>
                       )}
 
-                      {/* Homework / Essay Section */}
-                      {homeworkData && (
-                        <div className="w-full max-w-5xl mx-auto mt-8">
-                          <HomeworkSection data={homeworkData} />
-                        </div>
-                      )}
+
 
                       {/* Overall Score Summary */}
-                      {(recorder.evaluation?.score || reading2Score || comprehensionScore || exerciseScore) && (
+                      {(recorder.evaluation?.score != null || reading2Score != null || comprehensionScore != null || exerciseScore != null || writingScore != null) && (
                         <div className="w-full max-w-5xl mx-auto mt-8">
                           <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2rem] shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden">
                             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full" />
@@ -664,6 +668,14 @@ export default function App() {
                                   <span className="text-lg text-blue-200">/10</span>
                                 </div>
                               </div>
+                              {/* Writing Score */}
+                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">5. Writing (Viết bài)</div>
+                                <div className="text-3xl font-black">
+                                  {writingScore != null ? `${writingScore}` : '—'}
+                                  <span className="text-lg text-blue-200">/10</span>
+                                </div>
+                              </div>
                             </div>
                             
                             {/* Average Score */}
@@ -672,8 +684,9 @@ export default function App() {
                                 recorder.evaluation?.score,
                                 reading2Score,
                                 comprehensionScore,
-                                exerciseScore
-                              ].filter((s): s is number => s != null && s > 0);
+                                exerciseScore,
+                                writingScore
+                              ].filter((s): s is number => s != null);
                               
                               if (scores.length === 0) return null;
                               
@@ -687,25 +700,32 @@ export default function App() {
                               };
                               
                               return (
-                                <div className="relative z-10">
-                                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/30">
+                                <div className="relative z-10 mt-6 flex flex-col sm:flex-row items-center justify-between gap-6 bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/30">
+                                  <div>
                                     <div className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-2">Điểm Trung Bình</div>
                                     <div className="text-5xl font-black mb-1">
                                       {avg}<span className="text-2xl text-blue-200">/10</span>
                                     </div>
-                                    <div className="text-sm text-blue-100 mt-3 font-medium">
-                                      ({scores.length}/4 phần đã hoàn thành)
+                                    <div className="text-sm text-blue-100 mt-2 font-medium">
+                                      ({scores.length}/5 phần đã hoàn thành)
                                     </div>
                                   </div>
                                   
                                   {/* Comment from Ms. Yen */}
-                                  <div className="mt-4 flex items-start gap-3 bg-white/10 rounded-xl p-4 border border-white/20">
+                                  <div className="flex-1 flex items-start gap-3 bg-white/20 rounded-xl p-4 border border-white/20 text-left">
                                     <div className="w-10 h-10 rounded-full bg-pink-200 border-2 border-pink-300 flex items-center justify-center shrink-0 text-xl">👩‍🏫</div>
                                     <div>
                                       <div className="text-xs font-black text-pink-200 mb-1">Nhận xét từ Cô Yến:</div>
                                       <p className="text-sm text-white/90 font-medium leading-relaxed">{getComment(avg)}</p>
                                     </div>
                                   </div>
+                                  
+                                  <button onClick={() => setShowCertificate(true)}
+                                    className="px-6 py-4 bg-brand-gold hover:bg-yellow-500 text-brand-blue-dark font-black text-sm rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 uppercase tracking-wide shrink-0"
+                                  >
+                                    <Award size={20} />
+                                    Get Certificate
+                                  </button>
                                 </div>
                               );
                             })()}
@@ -717,10 +737,13 @@ export default function App() {
                       <CertificateModal
                         show={showCertificate} onClose={() => setShowCertificate(false)}
                         evaluation={recorder.evaluation}
+                        comprehensionScore={comprehensionScore}
+                        reading2Score={reading2Score}
+                        exerciseScore={exerciseScore}
+                        writingScore={writingScore}
                         studentName={studentName} teacherName={teacherName}
                         generatedTopicName={generatedTopicName} topic={topic} level={level}
                         isDownloading={isDownloading} setIsDownloading={setIsDownloading} setError={setError}
-                        exerciseScore={exerciseScore}
                       />
 
                       {/* AI Prompt Debug */}

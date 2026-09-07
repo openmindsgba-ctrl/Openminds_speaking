@@ -17,7 +17,8 @@ export interface WrittenQuestion {
 }
 
 export interface ExerciseData {
-  questions: WrittenQuestion[]; // 30 questions
+  questions: WrittenQuestion[]; // 20 questions
+  essay?: EssayExercise;
 }
 
 export interface MatchingExercise {
@@ -53,7 +54,6 @@ export interface EssayExercise {
 }
 
 export interface HomeworkData {
-  matching: MatchingExercise;
   fillBlanks: FillBlankExercise[];
   rewrites: RewriteExercise[];
   mistakes: MistakeExercise[];

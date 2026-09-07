@@ -41,59 +41,12 @@ export const HomeworkSection: React.FC<HomeworkSectionProps> = ({ data }) => {
         </button>
       </div>
 
-      {/* Matching */}
-      {data.matching && data.matching.items && data.matching.items.length > 0 && (
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-          <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
-            <Target size={18} className="text-pink-500" />
-            1. Match the words with their meanings
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              {data.matching.items.map((item, idx) => (
-                <div key={`term-${idx}`} className="p-3 bg-pink-50 rounded-lg border border-pink-100 text-pink-900 font-bold text-sm">
-                  {idx + 1}. {item.term}
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2">
-              {data.matching.items.map((item, idx) => (
-                <div key={`def-${idx}`} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter #"
-                    value={userInputs[`match-${idx}`] || ''}
-                    onChange={(e) => handleInputChange(`match-${idx}`, e.target.value)}
-                    className="w-16 text-center border-2 border-slate-200 rounded-lg focus:border-indigo-500 outline-none font-bold"
-                  />
-                  <div className="flex-1 p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 text-sm">
-                    {item.definition}
-                  </div>
-                  {showAnswers && (
-                    <div className="flex items-center justify-center w-8">
-                      {isCorrect(`match-${idx}`, String(idx + 1)) ? (
-                        <CheckCircle size={20} className="text-green-500" />
-                      ) : (
-                        <div className="text-xs font-black text-rose-500 flex flex-col items-center">
-                          <XCircle size={16} />
-                          <span>{idx + 1}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Fill in the Blanks */}
       {data.fillBlanks && data.fillBlanks.length > 0 && (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
             <Pen size={18} className="text-blue-500" />
-            2. Fill in the missing words
+            1. Fill in the missing words
           </h4>
           <div className="space-y-4">
             {data.fillBlanks.map((q, idx) => (
@@ -150,7 +103,7 @@ export const HomeworkSection: React.FC<HomeworkSectionProps> = ({ data }) => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
             <Search size={18} className="text-rose-500" />
-            3. Find and correct mistakes
+            2. Find and correct mistakes
           </h4>
           <div className="space-y-4">
             {data.mistakes.map((q, idx) => (
@@ -195,7 +148,7 @@ export const HomeworkSection: React.FC<HomeworkSectionProps> = ({ data }) => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
             <RefreshCw size={18} className="text-amber-500" />
-            4. Rewrite the sentences
+            3. Rewrite the sentences
           </h4>
           <div className="space-y-4">
             {data.rewrites.map((q, idx) => (
@@ -229,7 +182,7 @@ export const HomeworkSection: React.FC<HomeworkSectionProps> = ({ data }) => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
             <MessageSquare size={18} className="text-purple-500" />
-            5. Answer the questions
+            4. Answer the questions
           </h4>
           <div className="space-y-4">
             {data.questions.map((q, idx) => (
@@ -262,7 +215,7 @@ export const HomeworkSection: React.FC<HomeworkSectionProps> = ({ data }) => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
             <BookOpen size={18} className="text-teal-500" />
-            6. Essay Writing
+            5. Writing
           </h4>
           <div className="space-y-3 ml-2">
             <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">

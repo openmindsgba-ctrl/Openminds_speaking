@@ -126,8 +126,9 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
   };
 
   // Helper to normalize strings for comparison
-  const normalize = (str: string) => {
-    return str
+  const normalize = (str: any) => {
+    if (!str) return "";
+    return String(str)
       .toLowerCase()
       .replace(/[.,/#!$%^&*;:{}=\-_`~()?"']/g, "")
       .replace(/\s{2,}/g, " ")
@@ -357,7 +358,8 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {answers?.map((ans, idx) => {
-                  const vocabMatch = vocabulary.find(v => v.word.toLowerCase() === ans.toLowerCase());
+                  const ansStr = String(ans || '');
+                  const vocabMatch = vocabulary.find(v => String(v.word || '').toLowerCase() === ansStr.toLowerCase());
                   return (
                     <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
                       <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black shrink-0">
@@ -365,7 +367,7 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
                       </span>
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-black text-slate-800">{ans}</span>
+                          <span className="font-black text-slate-800">{ansStr}</span>
                           {vocabMatch?.ipa && (
                             <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{vocabMatch.ipa}</span>
                           )}

@@ -3,10 +3,15 @@ import { ExerciseData, WrittenQuestion, QuestionType } from '../types';
 import { CheckCircle, X, Award, FileText, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 
+import { evaluateEssay } from '../services/geminiService';
+import { EnglishLevel } from '../types';
+
 interface ExerciseSectionProps {
   exerciseData: ExerciseData;
   onComplete: (score: number) => void;
+  onWritingComplete?: (score: number) => void;
   savedScore?: number | null;
+  level: EnglishLevel;
 }
 
 const TYPE_LABELS: Record<QuestionType, string> = {
@@ -16,9 +21,14 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   complete_sentence: "Part 4: Complete the sentence using the given words"
 };
 
-export const ExerciseSection: React.FC<ExerciseSectionProps> = ({ exerciseData, onComplete, savedScore }) => {
+export const ExerciseSection: React.FC<ExerciseSectionProps> = ({ exerciseData, onComplete, onWritingComplete, savedScore, level }) => {
   const [userInputs, setUserInputs] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Essay states
+  const [isEssayGrading, setIsEssayGrading] = useState(false);
+  const [essayScore, setEssayScore] = useState<number | null>(null);
+  const [essayFeedback, setEssayFeedback] = useState<string | null>(null);
 
   const questions = exerciseData.questions || [];
 
@@ -29,8 +39,8 @@ export const ExerciseSection: React.FC<ExerciseSectionProps> = ({ exerciseData, 
   const calculateScore = () => {
     let correctCount = 0;
     questions.forEach(q => {
-      const userAns = (userInputs[q.id] || "").trim().toLowerCase();
-      const expected = (q.expectedAnswer || "").trim().toLowerCase();
+      const userAns = String(userInputs[q.id] || "").trim().toLowerCase();
+      const expected = String(q.expectedAnswer || "").trim().toLowerCase();
       if (userAns === expected && expected !== "") {
         correctCount++;
       }
@@ -89,62 +99,86 @@ export const ExerciseSection: React.FC<ExerciseSectionProps> = ({ exerciseData, 
               </h4>
               <div className="space-y-6">
                 {typeQuestions.map((q, idx) => {
-                  const userAns = (userInputs[q.id] || "").trim();
-                  const expected = (q.expectedAnswer || "").trim();
-                  const isCorrect = userAns.toLowerCase() === expected.toLowerCase();
+                  const userAns = String(userInputs[q.id] || "").trim().toLowerCase();
+                  const expected = String(q.expectedAnswer || "").trim().toLowerCase();
+                  const isCorrect = userAns === expected;
 
                   return (
-                    <div key={q.id || idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                      <div className="flex gap-3 mb-3">
-                        <span className="font-bold text-slate-400 shrink-0">Question {idx + 1}.</span>
-                        <p className="font-medium text-slate-800 text-lg leading-relaxed">{q.questionText || ""}</p>
-                      </div>
-                      <div className="ml-10 relative">
-                        <input
-                          type="text"
-                          value={userInputs[q.id] || ""}
-                          onChange={(e) => handleInputChange(q.id, e.target.value)}
-                          disabled={isSubmitted}
-                          placeholder="Enter your answer..."
-                          className={`w-full p-3 rounded-xl border-2 transition-colors ${
-                            isSubmitted 
-                              ? isCorrect 
-                                ? 'border-green-500 bg-green-50 text-green-800' 
-                                : 'border-red-400 bg-red-50 text-red-800'
-                              : 'border-slate-300 focus:border-brand-blue bg-white'
-                          }`}
-                        />
-                        {isSubmitted && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                            {isCorrect ? <CheckCircle className="text-green-500" /> : <X className="text-red-500" />}
+                    <div key={q.id} className="p-4 sm:p-5 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                        <div className="flex-shrink-0">
+                          <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-700 font-bold rounded-full">
+                            {idx + 1}
+                          </span>
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="text-slate-800 font-medium">
+                            {String(q.questionText || "").split('___').map((part, pIdx, arr) => (
+                              <React.Fragment key={pIdx}>
+                                {part}
+                                {pIdx < arr.length - 1 && (
+                                  <span className="inline-block w-16 border-b-2 border-slate-400 mx-1"></span>
+                                )}
+                              </React.Fragment>
+                            ))}
                           </div>
-                        )}
-                      </div>
 
-                      {isSubmitted && !isCorrect && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="ml-10 mt-3 p-4 bg-white border border-red-200 rounded-xl shadow-sm">
-                          <p className="text-sm font-bold text-green-700 mb-1">✅ Correct Answer:</p>
-                          <p className="text-base font-bold text-slate-800 mb-3">{q.expectedAnswer || "No answer provided"}</p>
-                          
-                          <div className="flex gap-2 items-start mt-3 pt-3 border-t border-slate-100">
-                            <Info size={16} className="text-brand-blue shrink-0 mt-0.5" />
-                            <p className="text-sm text-slate-600 italic">
-                              <strong>Explanation:</strong> {q.explanation || "No explanation provided"}
-                            </p>
-                          </div>
-                        </motion.div>
-                      )}
-                      
-                      {isSubmitted && isCorrect && (
-                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="ml-10 mt-3">
-                            <div className="flex gap-2 items-start p-3 bg-green-50 rounded-lg border border-green-100">
-                              <Info size={16} className="text-green-600 shrink-0 mt-0.5" />
-                              <p className="text-sm text-green-800 italic">
-                                <strong>Explanation:</strong> {q.explanation || "No explanation provided"}
-                              </p>
+                          {q.suggestedWords && typeof q.suggestedWords === 'string' && (
+                            <div className="flex flex-wrap gap-2">
+                              {q.suggestedWords.split(',').map((word, wIdx) => (
+                                <span key={wIdx} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-sm border border-slate-200">
+                                  {word.trim()}
+                                </span>
+                              ))}
                             </div>
-                         </motion.div>
-                      )}
+                          )}
+
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <div className="relative flex-1 w-full">
+                              <input
+                                type="text"
+                                value={userInputs[q.id] || ''}
+                                onChange={(e) => handleInputChange(q.id, e.target.value)}
+                                placeholder="Your answer..."
+                                disabled={isSubmitted}
+                                className={`w-full p-3 rounded-xl border-2 outline-none transition-all ${
+                                  isSubmitted
+                                    ? isCorrect
+                                      ? 'bg-green-50 border-green-200 text-green-900'
+                                      : 'bg-red-50 border-red-200 text-red-900'
+                                    : 'bg-white border-slate-200 focus:border-blue-500'
+                                }`}
+                              />
+                              {isSubmitted && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                  {isCorrect ? (
+                                    <CheckCircle className="text-green-500" size={20} />
+                                  ) : (
+                                    <X className="text-red-500" size={20} />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {isSubmitted && !isCorrect && (
+                            <div className="p-3 bg-green-50 text-green-800 rounded-lg text-sm border border-green-200">
+                              <span className="font-bold">Correct answer:</span> {q.expectedAnswer}
+                            </div>
+                          )}
+                          
+                          {isSubmitted && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3">
+                              <div className="flex gap-2 items-start p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                                <p className="text-sm text-blue-800">
+                                  <strong>Explanation:</strong> {q.explanation || "No explanation provided"}
+                                </p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -152,6 +186,92 @@ export const ExerciseSection: React.FC<ExerciseSectionProps> = ({ exerciseData, 
             </div>
           );
         })}
+
+        {exerciseData.essay && (
+          <div className="mb-8 p-6 sm:p-8 bg-teal-50 rounded-2xl border-2 border-teal-100">
+            <h3 className="text-xl sm:text-2xl font-black text-teal-800 mb-6 flex items-center gap-3">
+              <span className="bg-teal-200 text-teal-800 p-2 rounded-xl"><FileText size={24} /></span>
+              Part 5: Writing
+            </h3>
+            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+              <div className="space-y-4 mb-4">
+                <div className="p-4 bg-teal-50/50 rounded-xl border border-teal-100">
+                  <h5 className="font-bold text-teal-800 mb-2">Topic:</h5>
+                  <p className="text-teal-900 font-medium">{exerciseData.essay.topic}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <h5 className="font-bold text-slate-700 text-xs mb-2 uppercase tracking-wider">Guidance:</h5>
+                  <p className="text-sm text-slate-600 italic whitespace-pre-wrap">{exerciseData.essay.guidance}</p>
+                </div>
+              </div>
+              <textarea
+                value={userInputs['essay'] || ''}
+                onChange={(e) => handleInputChange('essay', e.target.value)}
+                disabled={isEssayGrading || essayScore !== null}
+                className={`w-full border-2 rounded-xl p-4 outline-none min-h-[200px] transition-colors ${
+                  essayScore !== null 
+                    ? 'bg-gray-50 border-gray-200 text-gray-700' 
+                    : 'bg-white border-slate-200 focus:border-teal-400'
+                }`}
+                placeholder="Start writing your essay here..."
+              />
+
+              {!essayScore && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={async () => {
+                      const text = (userInputs['essay'] || '').trim();
+                      if (!text) {
+                        alert("Please write your essay first!");
+                        return;
+                      }
+                      setIsEssayGrading(true);
+                      setEssayFeedback(null);
+                      try {
+                        const result = await evaluateEssay(text, exerciseData.essay!.topic, level);
+                        setEssayScore(result.score);
+                        setEssayFeedback(result.feedback);
+                        if (onWritingComplete) onWritingComplete(result.score);
+                      } catch (err) {
+                        alert("Lỗi chấm điểm. Vui lòng thử lại sau.");
+                      } finally {
+                        setIsEssayGrading(false);
+                      }
+                    }}
+                    disabled={isEssayGrading || !userInputs['essay']?.trim()}
+                    className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md disabled:opacity-50 flex items-center gap-2 transition-all"
+                  >
+                    {isEssayGrading ? (
+                      <>
+                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                         Grading...
+                      </>
+                    ) : (
+                      "Submit Essay"
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {essayScore !== null && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-5 bg-white border-2 border-teal-200 rounded-xl shadow-sm">
+                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
+                    <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center border border-teal-200 shrink-0">
+                      <span className="text-2xl font-black text-teal-700">{essayScore}<span className="text-sm text-teal-500">/10</span></span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-lg">Essay Score</h4>
+                      <p className="text-sm text-slate-500">Graded by AI Teacher</p>
+                    </div>
+                  </div>
+                  <div className="text-slate-700 whitespace-pre-wrap leading-relaxed text-sm">
+                    {essayFeedback}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        )}
 
         {(!questions || questions.length === 0) && (
           <div className="p-8 text-center text-gray-500 bg-white rounded-2xl border-2 border-dashed border-gray-200">
