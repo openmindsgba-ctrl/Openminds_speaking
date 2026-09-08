@@ -301,8 +301,8 @@ export const generateContent = async (
       case "Starters": return { vocabCount: 6, readingLength: "50-80 words" };
       case "Movers": return { vocabCount: 8, readingLength: "80-120 words" };
       case "Flyers": return { vocabCount: 10, readingLength: "120-150 words" };
-      case "A1": return { vocabCount: 22, readingLength: "200-280 words" };
-      case "A2": return { vocabCount: 30, readingLength: "280-380 words" };
+      case "A1": return { vocabCount: 25, readingLength: "200-280 words" };
+      case "A2": return { vocabCount: 32, readingLength: "280-380 words" };
       case "B1": return { vocabCount: 18, readingLength: "250-350 words" };
       case "B2": return { vocabCount: 20, readingLength: "350-500 words" };
       default: return { vocabCount: 12, readingLength: "150-200 words" };
