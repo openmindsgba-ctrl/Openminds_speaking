@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Volume2, CheckCircle, XCircle, Award, Play, Pause, Languages } from 'lucide-react';
 import { EnglishLevel, VocabularyItem } from '../types';
 
@@ -43,6 +43,16 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
 }) => {
   const [userInputs, setUserInputs] = useState<Record<number, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const shuffledVocabulary = useMemo(() => {
+    if (!vocabulary || vocabulary.length === 0) return [];
+    const shuffled = [...vocabulary];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, [vocabulary]);
 
   // Audio player state
   const [currentTime, setCurrentTime] = useState(0);
@@ -167,7 +177,7 @@ export const ReadingTwo: React.FC<ReadingTwoProps> = ({
       <div className="bg-blue-50 border-2 border-blue-100 rounded-xl p-4">
         <h4 className="text-sm font-bold text-blue-900 mb-2 uppercase tracking-wide">Word Bank</h4>
         <div className="flex flex-wrap gap-2">
-          {(vocabulary || []).map((v, idx) => (
+          {shuffledVocabulary.map((v, idx) => (
             <span key={idx} className="bg-white border border-blue-200 text-blue-700 px-3 py-1 rounded-lg text-sm font-bold shadow-sm">
               {v.word}
             </span>
