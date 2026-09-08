@@ -334,13 +334,13 @@ export const generateContent = async (
   CRITICAL RULE 2: Ensure perfect English grammar and vocabulary usage. If writing about historical events or facts, they MUST be completely factually accurate (e.g., Wall Street Crash must be 1929, not 1920). Ensure the generated texts are natural and idiomatic.
   Your task is to generate:
   1. An image generation prompt for a highly realistic, clear educational illustration matching the topic and grammar. Include quality keywords: "photorealistic, 8k UHD resolution, vivid colors".
-  2. "readingText": A reading passage appropriate for level ${level}. MUST contain ALL ${vocabCount} vocabulary items (a mix of single words AND phrases) you generate. The length of this reading passage MUST be approximately ${readingLength}. Mark these vocabulary items by wrapping them in square brackets like [word] or [phrase]. Incorporate the grammar topic: "${grammarTopic}". ${mode === 'useInput' ? "USE EXACT USER TEXT." : generateModeInstructions}
-  3. "readingText2": A SECOND reading passage with DIFFERENT content but using the SAME ${vocabCount} vocabulary items (words and phrases) and grammar topic. The length MUST be approximately ${readingLength}. In this text, replace every occurrence of the ${vocabCount} vocabulary items with numbered blanks exactly like "(1)", "(2)", "(3)" etc. up to the total number of blanks. Make sure the context of each blank clearly points to exactly ONE vocabulary item.
+  2. "readingText": A reading passage appropriate for level ${level}. MUST contain ALL ${vocabCount} vocabulary items you generate. The length of this reading passage MUST be approximately ${readingLength}. Mark these vocabulary items by wrapping them in square brackets like [word] or [phrase]. Incorporate the grammar topic: "${grammarTopic}". ${mode === 'useInput' ? "USE EXACT USER TEXT." : generateModeInstructions}
+  3. "readingText2": A SECOND reading passage with DIFFERENT content but using the SAME ${vocabCount} vocabulary items and grammar topic. The length MUST be approximately ${readingLength}. In this text, replace every occurrence of the ${vocabCount} vocabulary items with numbered blanks exactly like "(1)", "(2)", "(3)" etc. up to the total number of blanks. Make sure the context of each blank clearly points to exactly ONE vocabulary item.
   4. "reading2Answers": An array of strings containing the correct words/phrases for each numbered blank in readingText2, in order.
   5. A short title/topic name (max 5 words).
   6. "translation": Vietnamese translation of readingText.
   7. "translation2": Vietnamese translation of readingText2.
-  8. "vocabulary": A list of EXACTLY ${vocabCount} items containing BOTH single vocabulary words AND phrases (bao gồm cả từ vựng đơn lẻ và cụm từ) extracted from readingText (bài đọc 1). For each item include:
+  8. "vocabulary": A list of EXACTLY ${vocabCount} items extracted from readingText (bài đọc 1). CRITICAL: This list MUST be a balanced mix of single vocabulary words AND phrases (cụm từ/collocations/idioms). Ensure that AT LEAST 30% of the items are phrases (cụm từ). For each item include:
      - "word": the English word or phrase
      - "ipa": phonetic transcription
      - "meaning": brief Vietnamese meaning
