@@ -211,9 +211,11 @@ export const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ ques
                   
                   {/* Voice Answer Button */}
                   <button
+                    type="button"
                     onClick={() => activeMic === qIdx ? handleStopAndEvaluate(qIdx) : startSpeechRecognition(qIdx)}
                     disabled={isLoading}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 shadow-sm border-2 ${
+                    style={{ touchAction: 'manipulation' }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 shadow-sm border-2 cursor-pointer relative z-50 ${
                       isLoading ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' :
                       activeMic === qIdx
                         ? 'bg-rose-50 border-rose-200 text-rose-500 animate-pulse'

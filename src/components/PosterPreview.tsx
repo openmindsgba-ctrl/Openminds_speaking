@@ -333,8 +333,10 @@ const ReadingPractice: React.FC<{ originalText: string | null }> = ({ originalTe
       </div>
 
       <button
+        type="button"
         onClick={isRecording ? stopRecording : startRecording}
-        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg ${
+        style={{ touchAction: 'manipulation' }}
+        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg cursor-pointer relative z-50 ${
           isRecording 
             ? 'bg-rose-500 text-white animate-pulse shadow-rose-300 scale-110' 
             : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 hover:scale-105 shadow-indigo-200'
@@ -918,8 +920,10 @@ const ComprehensionQuestionItem: React.FC<{ index: number, question: string, sug
       </div>
       <div className="ml-9 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <button
+          type="button"
           onClick={isRecording ? stopRecording : startRecording}
-          className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${
+          style={{ touchAction: 'manipulation' }}
+          className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm cursor-pointer relative z-50 ${
             isRecording 
               ? 'bg-rose-500 text-white animate-pulse shadow-rose-200' 
               : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:scale-105'

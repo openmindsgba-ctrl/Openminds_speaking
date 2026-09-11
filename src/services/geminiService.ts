@@ -407,6 +407,18 @@ export const generateContent = async (
       throw new Error("AI không thể tạo được danh sách từ vựng (vocabulary). Vui lòng thử lại.");
     }
 
+    const ensureString = (val: any): string => {
+      if (val === null || val === undefined) return "";
+      if (typeof val === 'object') return String(Object.values(val)[0] || "");
+      return String(val);
+    };
+
+    const reading2AnswersArray = Array.isArray(result.reading2Answers) 
+      ? result.reading2Answers.map(ensureString) 
+      : (typeof result.reading2Answers === 'object' && result.reading2Answers !== null 
+          ? Object.values(result.reading2Answers).map(ensureString) 
+          : []);
+
     return {
       prompt: result.prompt || "",
       readingText: finalReadingText,
@@ -416,7 +428,7 @@ export const generateContent = async (
       translation2: result.translation2 || "",
       vocabulary: result.vocabulary || [],
       overallGrammar: result.overallGrammar || "",
-      reading2Answers: result.reading2Answers || [],
+      reading2Answers: reading2AnswersArray,
       comprehensionQuestions: result.comprehensionQuestions || null,
       homework: result.homework || null,
     };
@@ -923,6 +935,23 @@ Output strictly a JSON object matching this schema:
 
   try {
     const result = parseSafeJson(response.text || "{}");
+    
+    if (Array.isArray(result.questions)) {
+      const ensureString = (val: any): string => {
+        if (val === null || val === undefined) return "";
+        if (typeof val === 'object') return String(Object.values(val)[0] || "");
+        return String(val);
+      };
+      
+      result.questions = result.questions.map((q: any) => ({
+        ...q,
+        expectedAnswer: ensureString(q.expectedAnswer),
+        questionText: ensureString(q.questionText),
+        explanation: ensureString(q.explanation),
+        suggestedWords: typeof q.suggestedWords === 'string' ? q.suggestedWords : ''
+      }));
+    }
+    
     return result as ExerciseData;
   } catch (err: any) {
     console.error("Exercise Generation Error:", err);
@@ -986,8 +1015,8 @@ Output JSON:
     return {
       isCorrect: result.isCorrect ?? false,
       score: result.score || 0,
-      transcribedText: result.transcribedText || "",
-      feedback: result.feedback || "Không thể nhận diện âm thanh."
+      transcribedText: typeof result.transcribedText === 'string' ? result.transcribedText : "",
+      feedback: typeof result.feedback === 'string' ? result.feedback : "Không thể nhận diện âm thanh."
     };
   } catch (err: any) {
     console.error("Speaking Answer Evaluation Error:", err);
@@ -1021,7 +1050,7 @@ Format strictly as JSON:
     const result = parseSafeJson(response.text || "{}");
     return {
       score: Math.min(10, Math.max(0, Number(result.score) || 0)),
-      feedback: result.feedback || "Cố gắng lên nhé!"
+      feedback: typeof result.feedback === 'string' ? result.feedback : "Cố gắng lên nhé!"
     };
   } catch (err) {
     console.error("Essay evaluation error", err);
@@ -1076,7 +1105,7 @@ Output your evaluation strictly in the following JSON format without any markdow
     const parsed = parseSafeJson(text);
     return {
       isCorrect: !!parsed.isCorrect,
-      feedback: parsed.feedback || (parsed.isCorrect ? "Câu trả lời của con rất chính xác! Khá lắm!" : "Câu trả lời chưa chính xác. Con hãy thử lại nhé!")
+      feedback: typeof parsed.feedback === 'string' ? parsed.feedback : (parsed.isCorrect ? "Câu trả lời của con rất chính xác! Khá lắm!" : "Câu trả lời chưa chính xác. Con hãy thử lại nhé!")
     };
   } catch (err: any) {
     console.error("Evaluate Comprehension Answer Error:", err);

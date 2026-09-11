@@ -35,9 +35,10 @@ export const SpeechEvaluator: React.FC<SpeechEvaluatorProps> = ({
         
         {!evaluation && !isEvaluating && !isRecording && (
           <button
+            type="button"
             onClick={startRecording}
-            className="flex items-center gap-3 px-5 sm:px-6 py-3 rounded-2xl font-black text-white transition-all shadow-xl text-sm sm:text-base bg-blue-600 hover:bg-blue-700 hover:-translate-y-1"
-            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+            style={{ touchAction: 'manipulation' }}
+            className="flex items-center gap-3 px-5 sm:px-6 py-3 rounded-2xl font-black text-white transition-all shadow-xl text-sm sm:text-base bg-blue-600 hover:bg-blue-700 hover:-translate-y-1 cursor-pointer relative z-50"
           >
             <Mic size={20} />
             Start Speaking Practice
@@ -47,9 +48,10 @@ export const SpeechEvaluator: React.FC<SpeechEvaluatorProps> = ({
         {isRecording && !isEvaluating && (
           <>
             <button
+              type="button"
               onClick={stopRecording}
-              className="flex items-center gap-3 px-5 sm:px-6 py-3 rounded-2xl font-black text-white transition-all shadow-xl text-sm sm:text-base bg-blue-500 hover:bg-blue-600 animate-pulse scale-105"
-              style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+              style={{ touchAction: 'manipulation' }}
+              className="flex items-center gap-3 px-5 sm:px-6 py-3 rounded-2xl font-black text-white transition-all shadow-xl text-sm sm:text-base bg-blue-500 hover:bg-blue-600 animate-pulse scale-105 cursor-pointer relative z-50"
             >
               <Square size={20} fill="currentColor" />
               Listening to you...
@@ -105,7 +107,12 @@ const IncompleteResult: React.FC<{ evaluation: EvaluationResult; startRecording:
         <span className="font-bold">Missing:</span> {evaluation.missingContent}
       </div>
     )}
-    <button onClick={startRecording} className="w-full py-2 bg-blue-500 text-white rounded-lg font-bold text-xs hover:bg-blue-600 transition-colors">Read again</button>
+      <button
+        type="button"
+        onClick={startRecording}
+        style={{ touchAction: 'manipulation' }}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold transition-colors cursor-pointer relative z-50"
+      >Read again</button>
   </div>
 );
 
